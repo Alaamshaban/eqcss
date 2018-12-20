@@ -1213,7 +1213,12 @@ License: MIT
               /eval\( *((".*?")|('.*?')) *\)/g,
               function(string, match) {
 
-                return EQCSS.tryWithEval(elements[j], match)
+              //  return EQCSS.tryWithEval(elements[j], match)
+              return scoped('div', `
+              margin: 1em;
+              background: lime;
+              height: eval(this.offsetWidth / (16/9))px;
+            `)
 
               }
             )
@@ -1324,29 +1329,60 @@ License: MIT
      * Eval('') and $it
      */
 
-    EQCSS.tryWithEval = function(element, string) {
+    // EQCSS.tryWithEval = function(element, string) {
 
-      var $it = element
-      var ret = ''
+    //   var $it = element
+    //   var ret = ''
 
-      try {
+    //   try {
 
-        // with() is necessary for implicit 'this'!
-        with ($it) { ret = eval(string.slice(1, -1)) }
+    //     // with() is necessary for implicit 'this'!
+    //     with ($it) { ret = eval(string.slice(1, -1)) }
 
+    //   }
+
+    //   catch(e) {
+
+    //     ret = ''
+
+    //   }
+
+    //   return ret
+
+    // }
+
+    function scoped(selector, rule) {
+
+      var tag = document.querySelectorAll(selector)
+      var style = ''
+      var count = 0
+    
+      for (var i=0; i < tag.length; i++) {
+    
+      var attr = selector.replace(/\W+/g, '')
+    
+        tag[i].setAttribute('data-scoped-' + attr, count)
+    
+        var scopedRule = rule.replace(/eval\((.*)\)/g, function(string, match){
+    
+          var func = new Function('return ' + match)
+    
+          return (func.call(tag[i]) || '')
+    
+        })
+    
+        style += '\n/* Scope: ' + selector + ' */\n'
+                 + '[data-scoped-' + attr + '="' + count + '"] {\n'
+                 + '  ' + scopedRule + '\n'
+                 + '}\n'
+    
+          count++
+    
       }
-
-      catch(e) {
-
-        ret = ''
-
-      }
-
-      return ret
-
+    
+      return style
+    
     }
-
-
     /*
      * EQCSS.reset
      * Deletes parsed queries removes EQCSS-generated tags and attributes
